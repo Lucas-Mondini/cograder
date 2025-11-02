@@ -1,15 +1,13 @@
 import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 if (!admin.apps.length) {
-  const serviceAccount = JSON.parse(
-    readFileSync(join(process.cwd(), 'firebase.json'), 'utf-8')
-  );
-
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "cograder-4b7ff.firebasestorage.app",
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    }),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }
 
