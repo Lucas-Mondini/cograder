@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    networks:
+      - app-network
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    environment:
+      - APP_ENV=${APP_ENV}
+      - API_URL=${API_URL}
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      - api
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
